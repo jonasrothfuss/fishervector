@@ -1,10 +1,10 @@
 import numpy as np
-from scipy.stats import multivariate_normal
 from sklearn.mixture import GaussianMixture
-import pickle
+import pickle, os
+
+N_Kernel_Choices = [5, 20, 60, 100, 200, 500]
 
 class FisherVectorGMM:
-
   def __init__(self, n_kernels=1, covariance_type='diag'):
     assert covariance_type in ['diag', 'full']
     assert n_kernels > 0
@@ -17,6 +17,74 @@ class FisherVectorGMM:
     return self.gmm.bic(X.reshape(-1, X.shape[-1]))
 
   def fit(self, X, model_dump_path=None, verbose=True):
+    """
+    :param X: either a ndarray with 4 dimensions (n_videos, n_frames, n_descriptors_per_image, n_dim_descriptor)
+              or with 3 dimensions (n_images, n_descriptors_per_image, n_dim_descriptor)
+    :param model_dump_path: (optional) path where the fitted model shall be dumped
+    :param verbose - boolean that controls the verbosity
+    :return: fitted Fisher vector object
+    """
+
+    if X.ndim == 4:
+      self.ndim = 4
+      return self._fit(X, model_dump_path=model_dump_path, verbose=verbose)
+
+    elif X.ndim == 3:
+      self.ndim = 3
+      X = np.reshape(X, [1] + list(X.shape))
+      return self._fit(X, model_dump_path=model_dump_path, verbose=verbose)
+
+    else:
+      raise AssertionError("X must be an ndarray with 3 or 4 dimensions")
+
+  def fit_by_bic(self, X, choices_n_kernels=N_Kernel_Choices, model_dump_path=None, verbose=True):
+    """
+    Fits the GMM with various n_kernels and selects the model with the lowest BIC
+    :param X: either a ndarray with 4 dimensions (n_videos, n_frames, n_descriptors_per_image, n_dim_descriptor)
+              or with 3 dimensions (n_images, n_descriptors_per_image, n_dim_descriptor)
+    :param choices_n_kernels: array of positive integers that specify with how many kernels the GMM shall be trained
+                              default: [20, 60, 100, 200, 500]
+    :param model_dump_path: (optional) path where the fitted model shall be dumped
+    :param verbose - boolean that controls the verbosity
+    :return: fitted Fisher vector object
+    """
+
+    if X.ndim == 4:
+      self.ndim = 4
+      return self._fit_by_bic(X, choices_n_kernels=choices_n_kernels, model_dump_path=model_dump_path, verbose=verbose)
+
+    elif X.ndim == 3:
+      self.ndim = 3
+      X = np.reshape(X, [1] + list(X.shape))
+      return self._fit_by_bic(X, choices_n_kernels=choices_n_kernels, model_dump_path=model_dump_path, verbose=verbose)
+
+    else:
+      raise AssertionError("X must be an ndarray with 3 or 4 dimensions")
+
+  def predict(self, X, normalized=True):
+    """
+    Computes Fisher Vectors of provided X
+    :param X: either a ndarray with 4 dimensions (n_videos, n_frames, n_descriptors_per_image, n_dim_descriptor)
+              or with 3 dimensions (n_images, n_descriptors_per_image, n_dim_descriptor)
+    :param normalized: boolean that indicated whether the fisher vectors shall be normalized --> improved fisher vector
+              (https://www.robots.ox.ac.uk/~vgg/rg/papers/peronnin_etal_ECCV10.pdf)
+    :returns fv: fisher vectors
+                  if X.ndim is 4 then returns ndarray of shape (n_videos, n_frames, 2*n_kernels, n_feature_dim)
+                  if X.ndim is 3 then returns ndarray of shape (n_images, 2*n_kernels, n_feature_dim)
+    """
+    if X.ndim == 4:
+      return self._predict(X, normalized=normalized)
+
+    elif X.ndim == 3:
+      orig_shape = X.shape
+      X = np.reshape(X, [1] + list(X.shape))
+      result = self._predict(X, normalized=normalized)
+      return np.reshape(result, (orig_shape[0], 2 * self.n_kernels, orig_shape[-1]))
+
+    else:
+      raise AssertionError("X must be an ndarray with 3 or 4 dimensions")
+
+  def _fit(self, X, model_dump_path=None, verbose=True):
     """
     :param X: shape (n_videos, n_frames, n_descriptors_per_image, n_dim_descriptor)
     :param model_dump_path: (optional) path where the fitted model shall be dumped
@@ -54,17 +122,19 @@ class FisherVectorGMM:
 
     return self
 
-  def fit_by_bic(self, X, model_dump_path=None, verbose=True):
+  def _fit_by_bic(self, X, choices_n_kernels=N_Kernel_Choices, model_dump_path=None, verbose=True):
     """
     Fits the GMM with various n_kernels and selects the model with the lowest BIC
     :param X: shape (n_videos, n_frames, n_descriptors_per_image, n_dim_descriptor)
+    :param choices_n_kernels: array of positive integers that specify with how many kernels the GMM shall be trained
+                              default: [20, 60, 100, 200, 500]
     :param model_dump_path: (optional) path where the fitted model shall be dumped
     :param verbose - boolean that controls the verbosity
     :return: fitted Fisher vector object
     """
-    n_kernel_choices = [20, 60, 100]
+
     bic_scores = []
-    for n_kernels in n_kernel_choices:
+    for n_kernels in choices_n_kernels:
       self.n_kernels = n_kernels
       bic_score = self.fit(X, verbose=False).score(X)
       bic_scores.append(bic_score)
@@ -72,7 +142,7 @@ class FisherVectorGMM:
       if verbose:
         print('fitted GMM with %i kernels - BIC = %.4f'%(n_kernels, bic_score))
 
-    best_n_kernels = n_kernel_choices[np.argmin(bic_scores)]
+    best_n_kernels = choices_n_kernels[np.argmin(bic_scores)]
 
     self.n_kernels = best_n_kernels
     if verbose:
@@ -80,7 +150,7 @@ class FisherVectorGMM:
 
     return self.fit(X, model_dump_path=model_dump_path, verbose=True)
 
-  def predict(self, X, normalized=True):
+  def _predict(self, X, normalized=True):
     """
     Computes Fisher Vectors of provided X
     :param X: features - ndarray of shape (n_videos, n_frames, n_features, n_feature_dim)
@@ -127,3 +197,16 @@ class FisherVectorGMM:
 
     assert fisher_vectors.ndim == 4
     return fisher_vectors
+
+  @staticmethod
+  def load_from_pickle(pickle_path):
+    """
+    loads a previously dumped FisherVectorGMM instance
+    :param pickle_path: path to the pickle file
+    :return: loaded FisherVectorGMM object
+    """
+    assert os.path.isfile(pickle_path), 'pickle path must be an existing file'
+    with open(pickle_path, 'rb') as f:
+      fv_gmm = pickle.load(f)
+      assert isinstance(fv_gmm, FisherVectorGMM), 'pickled object must be an instance of FisherVectorGMM'
+    return fv_gmm
