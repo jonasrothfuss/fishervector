@@ -16,4 +16,4 @@ install:
 
 # command to run tests
 script:
-  - python ./fishervector/tests/tests.py
+  - python tests.py
