@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/jonasrothfuss/py-fisher-vector.svg?branch=master)](https://travis-ci.org/jonasrothfuss/py-fisher-vector)
+
 # Description
 The package implements Improved Fisher Vectors as described in [1]. For a more concise description of Fisher Vectors see [2].
 The functionality includes:
@@ -7,7 +9,7 @@ The functionality includes:
 - Computing the (Improved) Fisher Vectors based on the fitted GMM
 
 # Installation
-For intsallation via pip run the following command on your terminal:
+For intsallation via pip run the following command on your terminal (requires python 3.4 or higher):
 ```
 $ pip install fishervector
 ```
