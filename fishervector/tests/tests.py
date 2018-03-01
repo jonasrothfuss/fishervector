@@ -1,7 +1,9 @@
-import unittest
-import numpy as np
-from FisherVector import FisherVectorGMM
 import os
+import unittest
+
+import numpy as np
+from fishervector import FisherVectorGMM
+
 
 class TestFisherVectors(unittest.TestCase):
 
@@ -30,7 +32,7 @@ class TestFisherVectors(unittest.TestCase):
     shape = [200, 15, 10, 30]
     test_data = np.concatenate([np.random.normal(np.zeros(30), size=shape), np.random.normal(np.ones(30), size=shape)], axis=0)
     n_kernels = 2
-    fv_gmm = FisherVectorGMM().fit_by_bic(test_data, choices_n_kernels=[2,5,7])
+    fv_gmm = FisherVectorGMM().fit_by_bic(test_data, choices_n_kernels=[2,7])
     n_test_videos = 20
     fv = fv_gmm.predict(test_data[:n_test_videos])
     self.assertEquals(fv.shape, (n_test_videos, 15, 2 * n_kernels, 30))
@@ -41,7 +43,7 @@ class TestFisherVectors(unittest.TestCase):
     shape = [200, 10, 30]
     test_data = np.concatenate([np.random.normal(-np.ones(30), size=shape), np.random.normal(np.ones(30), size=shape)], axis=0)
     n_kernels = 2
-    fv_gmm = FisherVectorGMM().fit_by_bic(test_data, choices_n_kernels=[2,5,7])
+    fv_gmm = FisherVectorGMM().fit_by_bic(test_data, choices_n_kernels=[2,7])
     n_test_videos = 20
     fv = fv_gmm.predict(test_data[:n_test_videos])
     self.assertEquals(fv.shape, (n_test_videos, 2 * n_kernels, 30))
