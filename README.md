@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/jonasrothfuss/py-fisher-vector.svg?branch=master)](https://travis-ci.org/jonasrothfuss/py-fisher-vector)
+[![Build Status](https://travis-ci.org/jonasrothfuss/fishervector.svg?branch=master)](https://travis-ci.org/jonasrothfuss/fishervector)
+
+https://travis-ci.org/jonasrothfuss/fishervector.svg?branch=master
 
 # Description
 The package implements Improved Fisher Vectors as described in [1]. For a more concise description of Fisher Vectors see [2].
