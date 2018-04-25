@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/jonasrothfuss/fishervector.svg?branch=master)](https://travis-ci.org/jonasrothfuss/fishervector)
+[![Downloads](http://pepy.tech/badge/fishervector)](http://pepy.tech/count/fishervector)
 
 # Description
 The package implements Improved Fisher Vectors as described in [1]. For a more concise description of Fisher Vectors see [2].
