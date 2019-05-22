@@ -172,7 +172,10 @@ class FisherVectorGMM:
 
     var = np.diagonal(self.covars, axis1=1, axis2=2)
 
-    norm_dev_from_modes = ((X[:,:, None, :] - self.means[None, None, :, :])/ var[None, None, :, :]) # (n_images, n_features, n_kernels, n_featur_dim)
+    # Decrease the memory usage of this function by a lot
+    norm_dev_from_modes = np.tile(X[:,:,None,:],(1,1,self.n_kernels,1))# (n_images, n_features, n_kernels, n_featur_dim)
+    np.subtract(norm_dev_from_modes,self.means[None, None, :, :],out=norm_dev_from_modes)
+    np.divide(norm_dev_from_modes,var[None, None, :, :],out=norm_dev_from_modes)
 
     # mean deviation
     mean_dev = np.multiply(likelihood_ratio[:,:,:, None], norm_dev_from_modes).mean(axis=1) #(n_images, n_kernels, n_feature_dim)
